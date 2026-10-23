@@ -1,7 +1,7 @@
 {
   "name": "@intelligentintern/iibin",
-  "version": "1.0.5-beta",
-  "description": "IIBIN JavaScript/TypeScript protocol library from King",
+  "version": "2.0.0-alpha.1",
+  "description": "Schema-defined IIBIN binary messages for browsers and Node.js",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -12,6 +12,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./legacy": {
+      "types": "./dist/legacy.d.ts",
+      "import": "./dist/legacy.js",
+      "require": "./dist/legacy.cjs"
     }
   },
   "files": [
@@ -19,7 +24,7 @@
   ],
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "build": "tsup src/index.ts src/legacy.ts --format esm,cjs --dts",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run clean && npm run build"
   },
@@ -31,13 +36,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Intelligent-Intern/king.git",
-    "directory": "packages/iibin"
+    "url": "git+https://github.com/Intelligent-Intern/iibin-js.git"
   },
   "bugs": {
-    "url": "https://github.com/Intelligent-Intern/king/issues"
+    "url": "https://github.com/Intelligent-Intern/iibin-js/issues"
   },
-  "homepage": "https://github.com/Intelligent-Intern/king/tree/main/packages/iibin",
+  "homepage": "https://github.com/Intelligent-Intern/iibin-js",
   "devDependencies": {
     "tsup": "^8.5.0",
     "typescript": "^5.9.3"
