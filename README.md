@@ -13,4 +13,6 @@ Supports bool, UTF-8 string, raw bytes, signed/unsigned/zigzag/fixed 32/64-bit i
 
 This is the protobuf-wire schema path, not a claim to implement every King schema feature: enum registries, oneof declarations, maps and recursive named schema references are not currently exposed by this package. They can be represented by explicit application schemas where appropriate. The previous incompatible codecs remain under `@intelligentintern/iibin/legacy`; the main entry point does not auto-detect or silently fall back to them.
 
-`make build` produces ESM, CommonJS and TypeScript declarations. MIT license. No remote repository or registry release has been created yet.
+`make build` produces ESM, CommonJS and TypeScript declarations. MIT license. The source is hosted at [Intelligent-Intern/iibin-js](https://github.com/Intelligent-Intern/iibin-js). The package has not been published to npm.
+
+Python codec: [iibin-py](https://github.com/Intelligent-Intern/iibin-py). Lunar Charge Control and Shopfloor demo: [iibin-demo](https://github.com/Intelligent-Intern/iibin-demo).
