@@ -5,7 +5,7 @@ export type Fields = Record<string,Field>;
 export type Message = Record<string,unknown>;
 const MAX=16*1024*1024;
 const TYPES=new Set(['string','bytes','bool','int32','uint32','sint32','int64','uint64','sint64','fixed32','sfixed32','fixed64','sfixed64','float','double','message']);
-const utf8=new TextEncoder(), text=new TextDecoder('utf-8',{fatal:true});
+const utf8=new TextEncoder(), text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true});
 const wire=(t:FieldType)=>['string','bytes','message'].includes(t)?2:['double','fixed64','sfixed64'].includes(t)?1:['float','fixed32','sfixed32'].includes(t)?5:0;
 function fail(message:string):never{throw new Error(`IIBIN: ${message}`)}
 class Writer {
@@ -35,7 +35,7 @@ function value(w:Writer,f:Field,v:unknown,depth:number){
 function encode(fields:Fields,message:Message,depth:number):Uint8Array{
  if(depth>32)fail('message nesting exceeds 32');if(!message||typeof message!=='object'||Array.isArray(message))fail('expected message object');
  for(const key of Object.keys(message))if(!Object.hasOwn(fields,key))fail(`unknown field ${key}`);
- const w=new Writer();for(const [name,f]of Object.entries(fields)){if(!Object.hasOwn(message,name))continue;const v=message[name],tag=BigInt(f.id)*8n+BigInt(wire(f.type));if(f.repeated){if(!Array.isArray(v))fail('expected array');for(const item of v as unknown[]){w.varint(tag);value(w,f,item,depth)}}else{w.varint(tag);value(w,f,v,depth)}}return w.finish();
+ const w=new Writer();for(const [name,f]of Object.entries(fields).sort((a,b)=>a[1].id-b[1].id)){if(!Object.hasOwn(message,name))continue;const v=message[name],tag=BigInt(f.id)*8n+BigInt(wire(f.type));if(f.repeated){if(!Array.isArray(v))fail('expected array');for(const item of v as unknown[]){w.varint(tag);value(w,f,item,depth)}}else{w.varint(tag);value(w,f,v,depth)}}return w.finish();
 }
 function readValue(r:Reader,f:Field,depth:number):unknown{
  const t=f.type,k=wire(t);if(k===2){const b=r.block();if(t==='string')return text.decode(b);if(t==='bytes')return b.slice();return decode(f.schema!,b,depth+1)}
@@ -43,20 +43,20 @@ function readValue(r:Reader,f:Field,depth:number):unknown{
  let n=0n;if(k===0)n=r.varint();else{const b=r.take(k===5?4:8);for(let i=0;i<b.length;i++)n|=BigInt(b[i])<<BigInt(8*i)}
  if(t==='bool')return n!==0n;
  if(t.startsWith('sint')){if(t==='sint32'&&n>0xffffffffn)fail('sint32 out of range');n=(n>>1n)^(-(n&1n))}
- else if(t.startsWith('int')||t.startsWith('sfixed'))n=BigInt.asIntN(t.includes('32')?32:64,n);
+ else if(t.startsWith('int')||t.startsWith('sfixed')){if(t==='int32'&&n>0x7fffffffn&&n<0xffffffff80000000n)fail('int32 out of range');n=BigInt.asIntN(t.includes('32')?32:64,n)}
  else if(t.includes('32')&&n>0xffffffffn)fail('uint32 out of range');
  return t.includes('64')?n:Number(n);
 }
 function decode(fields:Fields,b:Uint8Array,depth:number):Message{
  if(depth>32)fail('message nesting exceeds 32');const byId=new Map(Object.entries(fields).map(([name,f])=>[f.id,{name,f}]));const out:Message=Object.create(null),r=new Reader(b);
  while(r.position<b.length){const tag=r.varint();if(tag<8n||(tag>>3n)>=(1n<<29n))fail('invalid field tag');const id=Number(tag>>3n),k=Number(tag&7n),entry=byId.get(id);if(!entry){r.skip(k);continue}const {name,f}=entry,expected=wire(f.type);
-  if(k===2&&expected!==2&&f.repeated){const packed=new Reader(r.block()),items=(out[name]??=[]) as unknown[];while(packed.position<packed.bytes.length)items.push(readValue(packed,f,depth));continue}
+  if(k===2&&expected!==2&&f.repeated){const packed=new Reader(r.block());while(packed.position<packed.bytes.length)((out[name]??=[]) as unknown[]).push(readValue(packed,f,depth));continue}
   if(k!==expected)fail(`wire mismatch for ${name}`);const v=readValue(r,f,depth);if(f.repeated)((out[name]??=[]) as unknown[]).push(v);else Object.defineProperty(out,name,{value:v,writable:true,enumerable:true,configurable:true});
  }return out;
 }
 function validate(fields:Fields,depth=0):Fields{
  if(depth>32||!fields||typeof fields!=='object'||Array.isArray(fields))fail('invalid schema');const ids=new Set<number>(),out:Fields=Object.create(null);
- for(const [name,original]of Object.entries(fields)){const f={...original};if(!name||!Number.isInteger(f.id)||f.id<1||f.id>=2**29||(f.id>=19000&&f.id<=19999)||ids.has(f.id)||!TYPES.has(f.type))fail(`invalid field ${name}`);ids.add(f.id);if(f.type==='message')f.schema=validate(f.schema!,depth+1);out[name]=Object.freeze(f)}return Object.freeze(out);
+ for(const [name,original]of Object.entries(fields).sort((a,b)=>a[1].id-b[1].id)){const f={...original};if(!name||!Number.isInteger(f.id)||f.id<1||f.id>=2**29||(f.id>=19000&&f.id<=19999)||ids.has(f.id)||!TYPES.has(f.type))fail(`invalid field ${name}`);ids.add(f.id);if(f.type==='message')f.schema=validate(f.schema!,depth+1);out[name]=Object.freeze(f)}return Object.freeze(out);
 }
 export class Schema {
  readonly fields:Fields;
