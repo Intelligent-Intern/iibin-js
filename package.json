@@ -48,7 +48,7 @@
   },
   "homepage": "https://github.com/Intelligent-Intern/iibin-js",
   "devDependencies": {
-    "tsup": "^8.5.0",
+    "tsup": "^9.0.0",
     "typescript": "^5.9.3"
   },
   "overrides": {
