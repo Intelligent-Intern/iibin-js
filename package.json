@@ -1,7 +1,8 @@
 {
   "name": "@intelligentintern/iibin",
-  "version": "2.0.0-alpha.1",
-  "description": "Schema-defined IIBIN binary messages for browsers and Node.js",
+  "version": "2.0.0-alpha.2",
+  "description": "IIBIN 2 schema-based binary messages for JS, Python and King; breaking change from JS 1.x",
+  "keywords": ["iibin", "serialization", "binary", "protobuf", "codec"],
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -20,16 +21,20 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "RELEASING.md",
+    "MIGRATION.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "clean": "rm -rf dist",
     "build": "tsup src/index.ts src/legacy.ts --format esm,cjs --dts",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run clean && npm run build"
+    "prepack": "npm run clean && npm run typecheck && npm run build"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "tag": "alpha"
   },
   "engines": {
     "node": ">=18"
